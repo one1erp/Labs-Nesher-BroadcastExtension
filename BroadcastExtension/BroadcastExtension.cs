@@ -10,6 +10,8 @@ using LSSERVICEPROVIDERLib;
 using System.Runtime.InteropServices;
 using MSXML;
 using XmlService;
+using System.Diagnostics;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace BroadcastExtension
 {
@@ -22,13 +24,13 @@ namespace BroadcastExtension
         private INautilusServiceProvider sp;
         public void Execute(ref LSExtensionParameters Parameters)
         {
-          
+
             string tableName = Parameters["TABLE_NAME"];
             sp = Parameters["SERVICE_PROVIDER"];
             var Id = Parameters["WORKFLOW_NODE_ID"];
             var rs = Parameters["RECORDS"];
-            
-            
+
+
             var bbb = Utils.GetNtlsCon(sp);
             Utils.CreateConstring(bbb);
             var xmlProcessor = Utils.GetXmlProcessor(sp);
@@ -71,7 +73,7 @@ namespace BroadcastExtension
         private void EntityFireEvent(INautilusProcessXML xmlProcessror, string tableName, long EntityID, string EventName)
         {
             var res = new DOMDocument();
-            var fireEventXml = new  FireEventXmlHandler(sp);
+            var fireEventXml = new FireEventXmlHandler(sp);
             fireEventXml.CreateFireEventXml(tableName, EntityID, EventName);
             fireEventXml.ProcssXml();
 
@@ -81,19 +83,22 @@ namespace BroadcastExtension
 
         private void CaseResult(Result result, INautilusProcessXML xml, IEnumerable<string> eventToFireSplit)
         {
+            if (result.Status == "X") return;
+
             foreach (var eventName in eventToFireSplit)
             {
                 if (result.EVENTS != null && result.EVENTS.Contains(eventName + ","))
                 {
-                 
                     EntityFireEvent(xml, "RESULT", result.ResultId, eventName);
                 }
             }
-            
+
         }
 
         private void CaseTest(Test test, INautilusProcessXML xml, IEnumerable<string> eventToFireSplit)
         {
+            if (test.STATUS == "X") return;
+
             foreach (var eventName in eventToFireSplit)
             {
                 if (test.EVENTS != null && test.EVENTS.Contains(eventName + ","))
@@ -106,11 +111,12 @@ namespace BroadcastExtension
                     CaseResult(result, xml, eventToFireSplit);
                 }
             }
-           
+
         }
 
         private void CaseAliquot(Aliquot aliquot, INautilusProcessXML xml, IEnumerable<string> eventToFireSplit)
         {
+            if (aliquot.Status == "X") return;
 
             foreach (var EventName in eventToFireSplit)
             {
@@ -128,11 +134,12 @@ namespace BroadcastExtension
                     CaseAliquot(child, xml, eventToFireSplit);
                 }
             }
-           
+
         }
 
         private void CaseSample(Sample sample, INautilusProcessXML xml, IEnumerable<string> eventToFireSplit)
         {
+
             foreach (var EventName in eventToFireSplit)
             {
                 if (sample.EVENTS != null && sample.EVENTS.Contains(EventName + ","))
@@ -150,7 +157,7 @@ namespace BroadcastExtension
 
                 }
             }
-           
+
         }
 
         private void CaseSdg(Sdg sdg, INautilusProcessXML xml, IEnumerable<string> eventToFireSplit)
@@ -167,7 +174,7 @@ namespace BroadcastExtension
                     CaseSample(sample, xml, eventToFireSplit);
                 }
             }
-           
+
         }
 
 
